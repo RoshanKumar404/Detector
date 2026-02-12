@@ -1,45 +1,69 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { COLORS } from '../constants/colors';
+import { storageService } from '../services/storageService';
+import { useFocusEffect } from '@react-navigation/native';
 
 type HomeScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Home'>;
 };
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
+  const [stats, setStats] = useState({ total: 0, resolved: 0 });
+
+  useFocusEffect(
+    useCallback(() => {
+      loadStats();
+    }, [])
+  );
+
+  const loadStats = async () => {
+    const data = await storageService.getReportStats();
+    setStats(data);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Water Logging Detector</Text>
-        <Text style={styles.subtitle}>Help your community by reporting waterlogged roads.</Text>
-        
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>0</Text>
-            <Text style={styles.statLabel}>My Reports</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.content}>
+          <Text style={styles.title}>Water Logging Detector</Text>
+          <Text style={styles.subtitle}>Help your community by reporting waterlogged roads.</Text>
+          
+          <View style={styles.statsContainer}>
+            <TouchableOpacity 
+              style={styles.statCard}
+              onPress={() => navigation.navigate('MyReports')}
+            >
+              <Text style={styles.statNumber}>{stats.total}</Text>
+              <Text style={styles.statLabel}>My Reports</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.statCard, { backgroundColor: COLORS.low + '20' }]}
+              onPress={() => navigation.navigate('MyReports')}
+            >
+              <Text style={[styles.statNumber, { color: COLORS.low }]}>{stats.resolved}</Text>
+              <Text style={styles.statLabel}>Resolved</Text>
+            </TouchableOpacity>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>0</Text>
-            <Text style={styles.statLabel}>Resolved</Text>
-          </View>
+
+          <TouchableOpacity 
+            style={styles.mainButton}
+            onPress={() => navigation.navigate('Camera')}
+          >
+            <Text style={styles.buttonText}>Report Waterlogging</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.secondaryButton, { marginTop: 15 }]}
+            onPress={() => navigation.navigate('MapView')}
+          >
+            <Text style={styles.secondaryButtonText}>View Heatmap</Text>
+          </TouchableOpacity>
         </View>
-
-        <TouchableOpacity 
-          style={styles.mainButton}
-          onPress={() => navigation.navigate('Camera')}
-        >
-          <Text style={styles.buttonText}>Report Waterlogging</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={[styles.secondaryButton, { marginTop: 15 }]}
-          onPress={() => navigation.navigate('MapView')}
-        >
-          <Text style={styles.secondaryButtonText}>View Heatmap</Text>
-        </TouchableOpacity>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -48,6 +72,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   content: {
     padding: 20,

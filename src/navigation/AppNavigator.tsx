@@ -7,6 +7,7 @@ import { RootStackParamList } from './types';
 import HomeScreen from '../screens/HomeScreen';
 import CameraScreen from '../screens/CameraScreen';
 import ReportDetailsScreen from '../screens/ReportDetailsScreen';
+import MyReportsScreen from '../screens/MyReportsScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -40,15 +41,16 @@ const AppNavigator = () => {
           component={ReportDetailsScreen} 
           options={{ title: 'Report Details' }} 
         />
+        <Stack.Screen 
+          name="MyReports" 
+          component={MyReportsScreen} 
+          options={{ title: 'My Submissions' }} 
+        />
         
         {/* Placeholder screens to be implemented */}
         <Stack.Screen 
           name="MapView" 
           component={PlaceholderScreen('Map View')} 
-        />
-        <Stack.Screen 
-          name="MyReports" 
-          component={PlaceholderScreen('My Reports')} 
         />
         <Stack.Screen 
           name="Profile" 
