@@ -3,9 +3,10 @@ import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, ScrollView,
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { COLORS } from '../constants/colors';
-import { Severity } from '../types';
+import { Severity, Report } from '../types';
 import Geolocation from '@react-native-community/geolocation';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
+import { storageService } from '../services/storageService';
 
 type ReportDetailsScreenProps = NativeStackScreenProps<RootStackParamList, 'ReportDetails'>;
 
@@ -43,7 +44,6 @@ const ReportDetailsScreen: React.FC<ReportDetailsScreenProps> = ({ route, naviga
           (error) => {
             console.error('Location Error:', error);
             Alert.alert('Location Error', 'Unable to fetch real location. Using placeholder.');
-            // Fallback to placeholder if error
             setLocation({ latitude: 28.6139, longitude: 77.2090 });
             setIsFetchingLocation(false);
           },
@@ -68,15 +68,31 @@ const ReportDetailsScreen: React.FC<ReportDetailsScreenProps> = ({ route, naviga
 
     setIsSubmitting(true);
     
-    // Mock API call
-    setTimeout(() => {
+    try {
+      const newReport: Report = {
+        id: Date.now().toString(),
+        userId: 'current-user', // Mock user ID
+        imageUrl: imageUri,
+        location: location,
+        severity: severity,
+        description: description,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      await storageService.saveReport(newReport);
+
       setIsSubmitting(false);
       Alert.alert(
         'Success',
         'Report submitted successfully! Thank you for helping the community.',
         [{ text: 'OK', onPress: () => navigation.navigate('Home') }]
       );
-    }, 2000);
+    } catch (error) {
+      setIsSubmitting(false);
+      Alert.alert('Error', 'Failed to save report. Please try again.');
+    }
   };
 
   const severityOptions: { key: Severity; label: string; color: string }[] = [
