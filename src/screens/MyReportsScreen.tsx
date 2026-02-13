@@ -26,11 +26,6 @@ const MyReportsScreen: React.FC<MyReportsScreenProps> = ({ navigation }) => {
     setLoading(false);
   };
 
-  const handleToggleStatus = async (reportId: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'resolved' ? 'pending' : 'resolved';
-    await storageService.updateReportStatus(reportId, newStatus as any);
-    fetchReports();
-  };
 
   const renderReportItem = ({ item }: { item: Report }) => (
     <View style={styles.card}>
@@ -44,18 +39,13 @@ const MyReportsScreen: React.FC<MyReportsScreenProps> = ({ navigation }) => {
       <Text style={styles.descriptionText} numberOfLines={2}>{item.description}</Text>
       
       <View style={styles.cardFooter}>
-        <Text style={[styles.severityText, { color: COLORS[item.severity] }]}>
-          Severity: {item.severity.toUpperCase()}
-        </Text>
-        
-        <TouchableOpacity 
-          style={styles.resolveButton}
-          onPress={() => handleToggleStatus(item.id, item.status)}
+        <View 
+          style={[styles.severityBadge, { borderColor: COLORS[item.severity] }]}
         >
-          <Text style={styles.resolveButtonText}>
-            {item.status === 'resolved' ? 'Reopen' : 'Mark Resolved'}
+          <Text style={[styles.severityText, { color: COLORS[item.severity] }]}>
+            {item.severity.toUpperCase()}
           </Text>
-        </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -147,8 +137,14 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.gray[200],
     paddingTop: 10,
   },
+  severityBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 15,
+    borderWidth: 1,
+  },
   severityText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: 'bold',
   },
   resolveButton: {

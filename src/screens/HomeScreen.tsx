@@ -15,8 +15,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   useFocusEffect(
     useCallback(() => {
+      navigation.setOptions({
+        headerRight: () => (
+          <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={{ marginRight: 15 }}>
+            <Text style={{ color: '#fff', fontWeight: 'bold' }}>Profile</Text>
+          </TouchableOpacity>
+        ),
+      });
       loadStats();
-    }, [])
+    }, [navigation])
   );
 
   const loadStats = async () => {
