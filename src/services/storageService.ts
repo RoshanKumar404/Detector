@@ -18,7 +18,23 @@ export const storageService = {
   async getAllReports(): Promise<Report[]> {
     try {
       const reportsJson = await AsyncStorage.getItem(REPORTS_KEY);
-      return reportsJson ? JSON.parse(reportsJson) : [];
+      if (!reportsJson) {
+        // Initialize with one mock report on first run
+        const mockReport: Report = {
+          id: 'mock-1',
+          userId: 'system',
+          imageUrl: 'https://images.unsplash.com/photo-1541675154750-0444c7d51e8e?auto=format&fit=crop&q=80&w=400',
+          location: { latitude: 28.6139, longitude: 77.2090 },
+          severity: 'high',
+          description: 'Significant waterlogging near Connaught Place.',
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        await this.saveReport(mockReport);
+        return [mockReport];
+      }
+      return JSON.parse(reportsJson);
     } catch (error) {
       console.error('Error getting reports:', error);
       return [];

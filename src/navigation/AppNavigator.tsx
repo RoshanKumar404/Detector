@@ -8,6 +8,8 @@ import HomeScreen from '../screens/HomeScreen';
 import CameraScreen from '../screens/CameraScreen';
 import ReportDetailsScreen from '../screens/ReportDetailsScreen';
 import MyReportsScreen from '../screens/MyReportsScreen';
+import MapViewScreen from '../screens/MapViewScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -50,11 +52,13 @@ const AppNavigator = () => {
         {/* Placeholder screens to be implemented */}
         <Stack.Screen 
           name="MapView" 
-          component={PlaceholderScreen('Map View')} 
+          component={MapViewScreen} 
+          options={{ title: 'Waterlogging Map' }} 
         />
         <Stack.Screen 
           name="Profile" 
-          component={PlaceholderScreen('Profile')} 
+          component={ProfileScreen} 
+          options={{ title: 'My Profile' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
