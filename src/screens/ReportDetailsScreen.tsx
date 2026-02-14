@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, ScrollView, SafeAreaView, Alert, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, ScrollView, SafeAreaView, Alert, ActivityIndicator, Platform, Dimensions } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { COLORS } from '../constants/colors';
@@ -7,6 +7,10 @@ import { Severity, Report } from '../types';
 import Geolocation from '@react-native-community/geolocation';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import { storageService } from '../services/storageService';
+import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+import { GOOGLE_MAPS_API_KEY } from '@env';
+
+const { width } = Dimensions.get('window');
 
 type ReportDetailsScreenProps = NativeStackScreenProps<RootStackParamList, 'ReportDetails'>;
 
@@ -17,6 +21,7 @@ const ReportDetailsScreen: React.FC<ReportDetailsScreenProps> = ({ route, naviga
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFetchingLocation, setIsFetchingLocation] = useState(true);
   const [location, setLocation] = useState({ latitude: 0, longitude: 0 });
+  const [address, setAddress] = useState('Fetching address...');
 
   useEffect(() => {
     fetchRealLocation();
@@ -110,24 +115,42 @@ const ReportDetailsScreen: React.FC<ReportDetailsScreenProps> = ({ route, naviga
         <Image source={{ uri: imageUri }} style={styles.imagePreview} />
 
         <View style={styles.section}>
-          <Text style={styles.label}>Location Detected</Text>
-          <View style={styles.locationBox}>
-            {isFetchingLocation ? (
-              <View style={styles.fetchingRow}>
-                <ActivityIndicator size="small" color={COLORS.primary} style={{ marginRight: 10 }} />
-                <Text style={styles.locationText}>Fetching real location...</Text>
-              </View>
-            ) : (
-              <Text style={styles.locationText}>
-                Lat: {location.latitude.toFixed(6)}, Lng: {location.longitude.toFixed(6)}
-              </Text>
+          <Text style={styles.label}>Location</Text>
+          <View style={styles.searchBox}>
+            <GooglePlacesAutocomplete
+              placeholder={isFetchingLocation ? 'Detecting current location...' : 'Search for a location...'}
+              onPress={(data, details = null) => {
+                if (details) {
+                  setLocation({
+                    latitude: details.geometry.location.lat,
+                    longitude: details.geometry.location.lng,
+                  });
+                  setAddress(data.description);
+                }
+              }}
+              query={{
+                key: GOOGLE_MAPS_API_KEY,
+                language: 'en',
+              }}
+              fetchDetails={true}
+              styles={{
+                container: { flex: 0 },
+                textInput: styles.searchInput,
+                listView: { backgroundColor: '#fff', zIndex: 1000 },
+              }}
+            />
+          </View>
+          
+          <View style={styles.locationInfo}>
+            <Text style={styles.locationTextSmall}>
+              {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
+            </Text>
+            {!isFetchingLocation && (
+              <TouchableOpacity onPress={fetchRealLocation}>
+                <Text style={styles.retryText}>Refresh GPS</Text>
+              </TouchableOpacity>
             )}
           </View>
-          {!isFetchingLocation && (
-            <TouchableOpacity onPress={fetchRealLocation} style={styles.retryButton}>
-              <Text style={styles.retryText}>Retry Location</Text>
-            </TouchableOpacity>
-          )}
         </View>
 
         <View style={styles.section}>
@@ -221,9 +244,28 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.gray[300],
   },
-  locationText: {
-    fontSize: 14,
-    color: COLORS.text,
+  searchBox: {
+    zIndex: 10,
+    elevation: 3,
+  },
+  searchInput: {
+    height: 50,
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    fontSize: 16,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.gray[300],
+  },
+  locationInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    paddingHorizontal: 5,
+  },
+  locationTextSmall: {
+    fontSize: 12,
+    color: COLORS.gray[500],
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   fetchingRow: {

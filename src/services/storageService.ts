@@ -19,8 +19,8 @@ export const storageService = {
     try {
       const reportsJson = await AsyncStorage.getItem(REPORTS_KEY);
       if (!reportsJson) {
-        // Initialize with one mock report on first run
-        const mockReport: Report = {
+        // Initialize with default data if empty
+        const initialReports: Report[] = [{
           id: 'mock-1',
           userId: 'system',
           imageUrl: 'https://images.unsplash.com/photo-1541675154750-0444c7d51e8e?auto=format&fit=crop&q=80&w=400',
@@ -30,9 +30,9 @@ export const storageService = {
           status: 'pending',
           createdAt: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        };
-        await this.saveReport(mockReport);
-        return [mockReport];
+        }];
+        await AsyncStorage.setItem(REPORTS_KEY, JSON.stringify(initialReports));
+        return initialReports;
       }
       return JSON.parse(reportsJson);
     } catch (error) {
