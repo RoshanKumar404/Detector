@@ -6,9 +6,14 @@ apply plugin: "com.facebook.react"
  * Loads environment variables from .env file
  */
 def env = [:]
-rootProject.file("../../.env").eachLine { line ->
-    def (key, value) = line.tokenize("=")
-    if (key && value) env[key] = value
+def envFile = rootProject.file("../.env")
+if (envFile.exists()) {
+    envFile.eachLine { line ->
+        def parts = line.split("=", 2)
+        if (parts.length == 2) {
+            env[parts[0].trim()] = parts[1].trim()
+        }
+    }
 }
 
 /**
@@ -106,6 +111,8 @@ android {
     }
     buildTypes {
         debug {
+
+            
             signingConfig signingConfigs.debug
         }
         release {
