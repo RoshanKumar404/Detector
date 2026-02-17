@@ -97,6 +97,13 @@ export const apiService = {
       name: 'report.jpg',
     });
     
+    console.log('Sending issue to backend:', {
+      uri: cleanUri,
+      location,
+      prediction,
+      confidence
+    });
+    
     formData.append('latitude', location.latitude.toString());
     formData.append('longitude', location.longitude.toString());
     formData.append('prediction', prediction);
