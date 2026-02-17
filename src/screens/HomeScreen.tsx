@@ -5,6 +5,8 @@ import { RootStackParamList } from '../navigation/types';
 import { COLORS } from '../constants/colors';
 import { storageService } from '../services/storageService';
 import { useFocusEffect } from '@react-navigation/native';
+import { apiService } from '../services/apiService';
+import { authService } from '../services/authService';
 
 type HomeScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Home'>;
@@ -12,23 +14,54 @@ type HomeScreenProps = {
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [stats, setStats] = useState({ total: 0, resolved: 0 });
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
-      navigation.setOptions({
-        headerRight: () => (
-          <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={{ marginRight: 15 }}>
-            <Text style={{ color: '#fff', fontWeight: 'bold' }}>Profile</Text>
-          </TouchableOpacity>
-        ),
-      });
+      checkAuth();
       loadStats();
     }, [navigation])
   );
 
+  const checkAuth = async () => {
+    const authed = await authService.isAuthenticated();
+    setIsLoggedIn(authed);
+    
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity 
+          onPress={() => navigation.navigate(authed ? 'Profile' : 'Login')} 
+          style={{ marginRight: 15 }}
+        >
+          <Text style={{ color: '#fff', fontWeight: 'bold' }}>
+            {authed ? 'Profile' : 'Login'}
+          </Text>
+        </TouchableOpacity>
+      ),
+    });
+  };
+
   const loadStats = async () => {
-    const data = await storageService.getReportStats();
-    setStats(data);
+    try {
+      const authed = await authService.isAuthenticated();
+      if (!authed) {
+        // Fallback to local storage or dummy if not logged in
+        const data = await storageService.getReportStats();
+        setStats(data);
+        return;
+      }
+
+      const user = await authService.getUser();
+      if (user) {
+        const issues = await apiService.getIssues(user.id);
+        setStats({
+          total: issues.length,
+          resolved: issues.filter((i: any) => i.status === 'resolved').length
+        });
+      }
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    }
   };
 
   return (

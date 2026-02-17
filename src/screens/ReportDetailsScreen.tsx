@@ -9,6 +9,8 @@ import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import { storageService } from '../services/storageService';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import { GOOGLE_MAPS_API_KEY } from '@env';
+import { apiService } from '../services/apiService';
+import { authService } from '../services/authService';
 
 const { width } = Dimensions.get('window');
 
@@ -71,12 +73,30 @@ const ReportDetailsScreen: React.FC<ReportDetailsScreenProps> = ({ route, naviga
       return;
     }
 
+    const authed = await authService.isAuthenticated();
+    if (!authed) {
+      Alert.alert('Login Required', 'You must be logged in to submit a report.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Login', onPress: () => navigation.navigate('Login') }
+      ]);
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
+      // 1. Submit to Backend API
+      await apiService.createIssue(
+        imageUri,
+        location,
+        'waterlogged', // Placeholder for AI prediction, could be based on severity
+        severity === 'critical' ? 0.95 : 0.8 // Placeholder for confidence
+      );
+
+      // 2. Also save locally for offline access (optional/existing feature)
       const newReport: Report = {
         id: Date.now().toString(),
-        userId: 'current-user', // Mock user ID
+        userId: (await authService.getUser())?.id || 'unknown',
         imageUrl: imageUri,
         location: location,
         severity: severity,
@@ -85,7 +105,6 @@ const ReportDetailsScreen: React.FC<ReportDetailsScreenProps> = ({ route, naviga
         createdAt: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
-
       await storageService.saveReport(newReport);
 
       setIsSubmitting(false);
@@ -94,9 +113,10 @@ const ReportDetailsScreen: React.FC<ReportDetailsScreenProps> = ({ route, naviga
         'Report submitted successfully! Thank you for helping the community.',
         [{ text: 'OK', onPress: () => navigation.navigate('Home') }]
       );
-    } catch (error) {
+    } catch (error: any) {
       setIsSubmitting(false);
-      Alert.alert('Error', 'Failed to save report. Please try again.');
+      console.error('Submission Error:', error);
+      Alert.alert('Error', error.message || 'Failed to submit report. Please try again.');
     }
   };
 
