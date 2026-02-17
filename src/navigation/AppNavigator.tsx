@@ -5,6 +5,8 @@ import { RootStackParamList } from './types';
 
 // Screens
 import HomeScreen from '../screens/HomeScreen';
+import LoginScreen from '../screens/LoginScreen';
+import RegisterScreen from '../screens/RegisterScreen';
 import CameraScreen from '../screens/CameraScreen';
 import ReportDetailsScreen from '../screens/ReportDetailsScreen';
 import MyReportsScreen from '../screens/MyReportsScreen';
@@ -32,6 +34,16 @@ const AppNavigator = () => {
           name="Home" 
           component={HomeScreen} 
           options={{ title: 'Dashboard' }} 
+        />
+        <Stack.Screen 
+          name="Login" 
+          component={LoginScreen} 
+          options={{ headerShown: false }} 
+        />
+        <Stack.Screen 
+          name="Register" 
+          component={RegisterScreen} 
+          options={{ headerShown: false }} 
         />
         <Stack.Screen 
           name="Camera" 
