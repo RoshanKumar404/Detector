@@ -6,6 +6,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { storageService } from '../services/storageService';
 import { Report } from '../types';
 import { COLORS } from '../constants/colors';
+import { apiService } from '../services/apiService';
+import { authService } from '../services/authService';
 import { Region } from 'react-native-maps';
 // import { GOOGLE_MAPS_API_KEY } from '@env'; 
 const GOOGLE_MAPS_API_KEY: string = ''; 
@@ -26,22 +28,36 @@ const MapViewScreen = () => {
   const loadReports = async () => {
     console.log('Fetching reports...');
     try {
-      const data = await storageService.getAllReports();
-      console.log('Reports fetched:', data.length);
-      console.log('Report IDs:', data.map(r => r.id));
-      setReports(data);
+      // Try to fetch from API first
+      const apiReports = await apiService.getIssues();
+      console.log('API Reports fetched:', apiReports.length);
       
-      if (data.length > 0) {
-        console.log('Centering map on latest report:', data[0].location);
+      // Combine with local reports for complete view or just use API
+      // For now, let's use API if available, else fallback
+      if (apiReports && apiReports.length > 0) {
+          setReports(apiReports);
+          centerMap(apiReports);
+      } else {
+          const localReports = await storageService.getAllReports();
+          setReports(localReports);
+          centerMap(localReports);
+      }
+    } catch (err) {
+      console.error('Failed to load reports from API:', err);
+      const localReports = await storageService.getAllReports();
+      setReports(localReports);
+      centerMap(localReports);
+    }
+  };
+
+  const centerMap = (data: Report[]) => {
+    if (data.length > 0) {
         const latest = data[0];
         setMapRegion(prev => ({
           ...prev,
           latitude: latest.location.latitude,
           longitude: latest.location.longitude,
         }));
-      }
-    } catch (err) {
-      console.error('Failed to load reports:', err);
     }
   };
 

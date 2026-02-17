@@ -6,6 +6,8 @@ import { COLORS } from '../constants/colors';
 import { storageService } from '../services/storageService';
 import { Report } from '../types';
 import { format } from 'date-fns';
+import { apiService } from '../services/apiService';
+import { authService } from '../services/authService';
 
 type MyReportsScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'MyReports'>;
@@ -21,9 +23,27 @@ const MyReportsScreen: React.FC<MyReportsScreenProps> = ({ navigation }) => {
 
   const fetchReports = async () => {
     setLoading(true);
-    const data = await storageService.getAllReports();
-    setReports(data);
-    setLoading(false);
+    try {
+      const authed = await authService.isAuthenticated();
+      if (!authed) {
+        // Fallback to local storage if not logged in
+        const data = await storageService.getAllReports();
+        setReports(data || []);
+      } else {
+        const user = await authService.getUser();
+        if (user) {
+          const apiReports = await apiService.getIssues(user.id);
+          setReports(apiReports);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+      // Fallback to local on error
+      const data = await storageService.getAllReports();
+      setReports(data || []);
+    } finally {
+      setLoading(false);
+    }
   };
 
 

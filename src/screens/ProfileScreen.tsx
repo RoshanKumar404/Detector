@@ -4,6 +4,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { COLORS } from '../constants/colors';
 import { storageService } from '../services/storageService';
+import { authService, User } from '../services/authService';
+import { apiService } from '../services/apiService';
 
 type ProfileScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Profile'>;
@@ -12,20 +14,42 @@ type ProfileScreenProps = {
 const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   const [reportCount, setReportCount] = useState(0);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     loadProfileData();
   }, []);
 
   const loadProfileData = async () => {
-    const stats = await storageService.getReportStats();
-    setReportCount(stats.total);
+    const authed = await authService.isAuthenticated();
+    if (!authed) {
+      navigation.replace('Login');
+      return;
+    }
+
+    const userData = await authService.getUser();
+    setUser(userData);
+
+    if (userData) {
+      try {
+        const issues = await apiService.getIssues(userData.id);
+        setReportCount(issues.length);
+      } catch (err) {
+        const stats = await storageService.getReportStats();
+        setReportCount(stats.total);
+      }
+    }
+  };
+
+  const handleLogout = async () => {
+    await authService.logout();
+    navigation.replace('Home');
   };
 
   const handleClearData = () => {
     Alert.alert(
       'Clear All Data',
-      'Are you sure you want to delete all your submissions? This cannot be undone.',
+      'Are you sure you want to delete all your local submissions? This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         { 
@@ -34,7 +58,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           onPress: async () => {
             await storageService.clearAll();
             setReportCount(0);
-            Alert.alert('Success', 'All data has been cleared.');
+            Alert.alert('Success', 'All local data has been cleared.');
           } 
         }
       ]
@@ -46,12 +70,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       <ScrollView>
         <View style={styles.header}>
           <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarText}>RK</Text>
+            <Text style={styles.avatarText}>
+              {user?.name?.substring(0, 2).toUpperCase() || '??'}
+            </Text>
           </View>
-          <Text style={styles.userName}>Roshan Kumar</Text>
-          <Text style={styles.userEmail}>roshan@example.com</Text>
+          <Text style={styles.userName}>{user?.name || 'User'}</Text>
+          <Text style={styles.userEmail}>{user?.email || ''}</Text>
         </View>
 
+        {/* ... existing stats section ... */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Stats</Text>
           <View style={styles.card}>
@@ -62,6 +89,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           </View>
         </View>
 
+        {/* ... existing settings sections ... */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>
           <View style={styles.card}>
@@ -74,22 +102,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                 thumbColor={notificationsEnabled ? COLORS.primary : COLORS.gray[400]}
               />
             </View>
-            
-            <View style={[styles.settingRow, styles.noBorder]}>
-              <Text style={styles.settingLabel}>Dark Mode</Text>
-              <Switch value={false} disabled />
-            </View>
           </View>
         </View>
 
+        {/* Support & About */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Support & About</Text>
           <View style={styles.card}>
             <TouchableOpacity style={styles.settingRow}>
               <Text style={styles.settingLabel}>Help Center</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.settingRow}>
-              <Text style={styles.settingLabel}>Privacy Policy</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.settingRow, styles.noBorder]}>
               <Text style={styles.settingLabel}>App Version</Text>
@@ -97,6 +118,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
             </TouchableOpacity>
           </View>
         </View>
+
+        <TouchableOpacity 
+          style={[styles.clearButton, { borderColor: COLORS.primary, marginTop: 20 }]} 
+          onPress={handleLogout}
+        >
+          <Text style={[styles.clearButtonText, { color: COLORS.primary }]}>Logout</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity style={styles.clearButton} onPress={handleClearData}>
           <Text style={styles.clearButtonText}>Clear All App Data</Text>

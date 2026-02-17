@@ -17,17 +17,19 @@ const { width } = Dimensions.get('window');
 type ReportDetailsScreenProps = NativeStackScreenProps<RootStackParamList, 'ReportDetails'>;
 
 const ReportDetailsScreen: React.FC<ReportDetailsScreenProps> = ({ route, navigation }) => {
-  const { imageUri } = route.params;
+  const { imageUri, location: passedLocation } = route.params;
   const [description, setDescription] = useState('');
   const [severity, setSeverity] = useState<Severity>('medium');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isFetchingLocation, setIsFetchingLocation] = useState(true);
-  const [location, setLocation] = useState({ latitude: 0, longitude: 0 });
-  const [address, setAddress] = useState('Fetching address...');
+  const [isFetchingLocation, setIsFetchingLocation] = useState(!passedLocation);
+  const [location, setLocation] = useState(passedLocation || { latitude: 0, longitude: 0 });
+  const [address, setAddress] = useState(passedLocation ? 'Location captured from photo' : 'Fetching address...');
 
   useEffect(() => {
-    fetchRealLocation();
-  }, []);
+    if (!passedLocation) {
+      fetchRealLocation();
+    }
+  }, [passedLocation]);
 
   const fetchRealLocation = async () => {
     setIsFetchingLocation(true);

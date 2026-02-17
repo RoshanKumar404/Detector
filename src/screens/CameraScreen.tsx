@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, SafeAreaView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, SafeAreaView, Alert, Platform } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { COLORS } from '../constants/colors';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
-import { Platform } from 'react-native';
+import Geolocation from '@react-native-community/geolocation';
 
 type CameraScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Camera'>;
@@ -13,6 +13,22 @@ type CameraScreenProps = {
 
 const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [capturedLocation, setCapturedLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+
+  const captureLocation = () => {
+    Geolocation.getCurrentPosition(
+      (position) => {
+        setCapturedLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+      },
+      (error) => {
+        console.error('Location Error in Camera:', error);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+    );
+  };
 
   const handleCapture = async () => {
     if (Platform.OS === 'android') {
@@ -21,6 +37,13 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
         Alert.alert('Permission Denied', 'Camera permission is required to take photos.');
         return;
       }
+      
+      const locPermission = await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
+      if (locPermission === RESULTS.GRANTED) {
+        captureLocation();
+      }
+    } else {
+        captureLocation();
     }
 
     launchCamera({
@@ -61,7 +84,10 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
 
   const handleContinue = () => {
     if (imageUri) {
-      navigation.navigate('ReportDetails', { imageUri });
+      navigation.navigate('ReportDetails', { 
+        imageUri, 
+        location: capturedLocation || undefined 
+      });
     } else {
       Alert.alert('No Image', 'Please capture or select an image first.');
     }
